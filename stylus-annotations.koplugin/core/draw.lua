@@ -156,19 +156,23 @@ function Draw.paintStrokePath(bb, sph, sw, color)
     box_h = math.min(bb:getHeight() - box_y, box_h)
     if box_w <= 0 or box_h <= 0 then return end
 
+    if bb:getInverse() == 1 then
+        -- An inverse buffer needs alpha-mask composition: filling the whole
+        -- stroke bounds produces visible rectangles in night mode.
+        local alpha = Blitbuffer.new(box_w, box_h, Blitbuffer.TYPE_BB8)
+        if not alpha then return end
+        alpha:paintRect(0, 0, box_w, box_h, Blitbuffer.COLOR_BLACK)
+        Draw.stampPath(alpha, sph, -box_x, -box_y, sw / 2, Blitbuffer.COLOR_WHITE)
+        bb:colorblitFromRGB32(alpha, box_x, box_y, 0, 0, box_w, box_h, color)
+        alpha:free()
+        return
+    end
+
     local mask = Blitbuffer.new(box_w, box_h, bb:getType())
     if not mask then return end
     mask:paintRect(0, 0, box_w, box_h, Blitbuffer.COLOR_WHITE)
-
     Draw.stampPath(mask, sph, -box_x, -box_y, sw / 2, color)
-
-    if bb:getInverse() == 1 then
-        local rb = color:getColorRGB32()
-        local inv = Blitbuffer.ColorRGB32(rb.r, rb.g, rb.b, 0xFF):invert()
-        bb:blendRectRGB32(box_x, box_y, box_w, box_h, inv)
-    else
-        bb:blitFrom(mask, box_x, box_y, 0, 0, box_w, box_h, bb.setPixelMultiply)
-    end
+    bb:blitFrom(mask, box_x, box_y, 0, 0, box_w, box_h, bb.setPixelMultiply)
     mask:free()
 end
 

@@ -267,7 +267,11 @@ function StylusAnnotations:loadSettings()
     else
         self.tool_mode = TOOL_PEN
     end
-    self.toolbar_offset = ds:readSetting("stylus_annotations_toolbar_offset")
+    if ds:readSetting("stylus_annotations_toolbar_offset_version") == 1 then
+        self.toolbar_offset = ds:readSetting("stylus_annotations_toolbar_offset")
+    else
+        self.toolbar_offset = nil
+    end
 end
 
 function StylusAnnotations:saveSettings()
@@ -277,6 +281,9 @@ function StylusAnnotations:saveSettings()
     ds:saveSetting("stylus_annotations_color", self.color)
     ds:saveSetting("stylus_annotations_tool_mode", self.tool_mode)
     ds:saveSetting("stylus_annotations_toolbar_offset", self.toolbar_offset)
+    if self.toolbar_offset then
+        ds:saveSetting("stylus_annotations_toolbar_offset_version", 1)
+    end
 end
 
 function StylusAnnotations:resetUndoHistory()
@@ -409,7 +416,7 @@ function StylusAnnotations:showToolPalette()
     if self.tool_palette then return end
 
     local width = math.max(1, Screen:getWidth() - 2 * Screen:scaleBySize(8))
-    local anchor_y = Screen:getHeight() - Screen:scaleBySize(12)
+    local anchor_y = Screen:scaleBySize(12)
     local mode_text = function(mode, label)
         return mode == self.tool_mode and label .. " ✓" or label
     end
